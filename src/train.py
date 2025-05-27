@@ -38,9 +38,9 @@ def train(model: MyTranslator, tokenizer: Tokenizer, trainset_loader: DataLoader
     criterion = CrossEntropyLoss(ignore_index=0)
     grad_scaler = torch.GradScaler()
     
-    epoch_start = load_model(model=model, optimizer=optimizer, grad_scaler=grad_scaler, criterion=criterion)
+    epoch_start, counter_start = load_model(model=model, optimizer=optimizer, grad_scaler=grad_scaler, criterion=criterion)
     
-    counter = 0
+    counter = counter_start
     for i in range(epoch_start, n_epoch):
         train_progress = tqdm(trainset_loader)
         for (source_sentence, target_sentence) in train_progress:
@@ -74,7 +74,7 @@ def train(model: MyTranslator, tokenizer: Tokenizer, trainset_loader: DataLoader
                 model.train()
             counter += 1
         
-        save_model(model=model, optimizer=optimizer, grad_scaler=grad_scaler, criterion=criterion, epoch=i)
+        save_model(model=model, optimizer=optimizer, grad_scaler=grad_scaler, criterion=criterion, epoch=i, counter=counter)
 
 
 
@@ -94,11 +94,11 @@ tsvs = [
     # "en_ug(abu).tsv",
     # "en_ug(tanzil).tsv",
     "split/en_ug.tsv",
-    "split/zh_ug.tsv",
     "split/ug_en.tsv",
-    "split/ug_zh.tsv",
-    "split/ug_uz.tsv",
-    "split/uz_ug.tsv",
+    # "split/zh_ug.tsv",
+    # "split/ug_zh.tsv",
+    # "split/ug_uz.tsv",
+    # "split/uz_ug.tsv",
 ]
 
 train_set, validation_set = SentencePairDataset(tokenizer=tokenizer, tsv_files=[Path(__file__).parent.parent / ".data" / f for f in tsvs], max_allowed_tokens=300).split_into_train_set_validation_set(trainset_ratio=0.98)
