@@ -172,3 +172,20 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+checkpoint
+data
+.data
+uv.lock
+.logs
+.ipynb_checkpoints/
+.python-version
