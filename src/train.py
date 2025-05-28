@@ -63,7 +63,7 @@ def train(model: MyTranslator, tokenizer: Tokenizer, trainset_loader: DataLoader
             grad_scaler.scale(loss).backward()
             grad_scaler.step(optimizer)
             grad_scaler.update()
-            if counter % 20 == 0:
+            if counter % 200 == 0:
                 with torch.autocast(device_type=device, dtype=torch.float16):
                     #eval model performance using trainset.
                     validation_loss: float = eval(model, tokenizer, validationset_loader, device)
@@ -84,7 +84,7 @@ device = "cuda:0"
 
 tokenizer: Tokenizer = Tokenizer.from_file((Path(__file__).parent.parent / "config" / "./multilingual_tokenizer.json").as_posix())
 tokenizer.decoder = decoders.Metaspace()
-model = MyTranslator(d_model=512, n_vocab=tokenizer.get_vocab_size(), n_head=4, n_layer=2).to(device)
+model = MyTranslator(d_model=512, n_vocab=tokenizer.get_vocab_size(), n_head=8, n_layer=6).to(device)
 writer = SummaryWriter(Path(__file__).parent.parent / ".logs")
 
 tsvs = [
@@ -95,14 +95,35 @@ tsvs = [
     # "en_ug(tanzil).tsv",
     "split/en_ug.tsv",
     "split/ug_en.tsv",
-    # "split/zh_ug.tsv",
-    # "split/ug_zh.tsv",
-    # "split/ug_uz.tsv",
-    # "split/uz_ug.tsv",
+    
+    "split/zh_ug.tsv",
+    "split/ug_zh.tsv",
+    
+    "split/ug_uz.tsv",
+    "split/uz_ug.tsv",
+    
+    "split/en_uz.tsv",
+    "split/uz_en.tsv",
+    
+    "split/zh_uz.tsv",
+    "split/uz_zh.tsv",
+    
+    "split/ug_tr.tsv",
+    "split/tr_ug.tsv",
+    
+    "split/en_tr.tsv",
+    "split/tr_en.tsv",
+    
+    "split/tr_uz.tsv",
+    "split/uz_tr.tsv",
+    
+    "split/zh_tr.tsv",
+    "split/tr_zh.tsv",
+    
 ]
 
 train_set, validation_set = SentencePairDataset(tokenizer=tokenizer, tsv_files=[Path(__file__).parent.parent / ".data" / f for f in tsvs], max_allowed_tokens=300).split_into_train_set_validation_set(trainset_ratio=0.98)
-trainset_loader = DataLoader(train_set, batch_size=512, shuffle=False, collate_fn=collete_fn)
-validationset_loader = DataLoader(validation_set, batch_size=512, shuffle=False, collate_fn=collete_fn)
+trainset_loader = DataLoader(train_set, batch_size=256, shuffle=True, collate_fn=collete_fn)
+validationset_loader = DataLoader(validation_set, batch_size=256, shuffle=False, collate_fn=collete_fn)
 
-train(model=model, tokenizer=tokenizer, trainset_loader=trainset_loader, validationset_loader=validationset_loader, n_epoch=200, device=device, summary_writer=writer, learning_rate=0.00009)
+train(model=model, tokenizer=tokenizer, trainset_loader=trainset_loader, validationset_loader=validationset_loader, n_epoch=200, device=device, summary_writer=writer, learning_rate=0.00005)

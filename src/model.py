@@ -114,7 +114,7 @@ class MyTranslator(torch.nn.Module):
         """
 
         # Encode the prompt (English) and prepare as input
-        prompt_ids = tokenizer.encode(f"<SOS><uz>{prompt}</uz><EOS>").ids
+        prompt_ids = tokenizer.encode(f"<SOS><en>{prompt}</en><EOS>").ids
         prompt_tensor = torch.tensor([prompt_ids], dtype=torch.long, device=device)  # [1, src_seq_len]
 
         # Generate encoder memory from the prompt
@@ -125,7 +125,7 @@ class MyTranslator(torch.nn.Module):
         eos_token_id: int = tokenizer.token_to_id("<EOS>")
 
         # Start with <SOS>
-        generated = torch.tensor([tokenizer.encode("<SOS><uz>").ids], dtype=torch.long, device=device)
+        generated = torch.tensor([tokenizer.encode("<SOS><en>").ids], dtype=torch.long, device=device)
         for i in range(max_length - 1):
             # print(f"--------{i}---------")
             logits = self(generated, memory, memory_key_padding_mask)  # [1, seq_len, vocab]
