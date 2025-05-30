@@ -1,6 +1,6 @@
 
 from torch.utils.data import Dataset, DataLoader
-from dataset import SentencePairDataset, collete_fn
+from dataset import SentencePairDataset, collete_fn, TranslationDirection
 from tqdm import tqdm
 from model import MyTranslator
 from tokenizers import Tokenizer, decoders
@@ -42,7 +42,7 @@ def train(model: MyTranslator, tokenizer: Tokenizer, trainset_loader: DataLoader
     
     counter = counter_start
     for i in range(epoch_start, n_epoch):
-        train_progress = tqdm(trainset_loader)
+        train_progress = tqdm(trainset_loader, ncols=300)
         for (source_sentence, target_sentence) in train_progress:
             source_sentence: Tensor; target_sentence: Tensor
             source_sentence = source_sentence.to(device)
@@ -87,43 +87,21 @@ tokenizer.decoder = decoders.Metaspace()
 model = MyTranslator(d_model=512, n_vocab=tokenizer.get_vocab_size(), n_head=8, n_layer=6).to(device)
 writer = SummaryWriter(Path(__file__).parent.parent / ".logs")
 
+data_dir = Path(__file__).parent.parent / ".data"
 tsvs = [
-    # "en_ug(300).tsv",
-    # "en_ug(1100).tsv",
-    # "en_ug(4000).tsv",
-    # "en_ug(abu).tsv",
-    # "en_ug(tanzil).tsv",
-    "split/en_ug.tsv",
-    "split/ug_en.tsv",
-    
-    "split/zh_ug.tsv",
-    "split/ug_zh.tsv",
-    
-    "split/ug_uz.tsv",
-    "split/uz_ug.tsv",
-    
-    "split/en_uz.tsv",
-    "split/uz_en.tsv",
-    
-    "split/zh_uz.tsv",
-    "split/uz_zh.tsv",
-    
-    "split/ug_tr.tsv",
-    "split/tr_ug.tsv",
-    
-    "split/en_tr.tsv",
-    "split/tr_en.tsv",
-    
-    "split/tr_uz.tsv",
-    "split/uz_tr.tsv",
-    
-    "split/zh_tr.tsv",
-    "split/tr_zh.tsv",
-    
+    data_dir / "titles.tsv",
+    data_dir / "sub_sentences_1_translated.tsv"
 ]
 
-train_set, validation_set = SentencePairDataset(tokenizer=tokenizer, tsv_files=[Path(__file__).parent.parent / ".data" / f for f in tsvs], max_allowed_tokens=300).split_into_train_set_validation_set(trainset_ratio=0.98)
-trainset_loader = DataLoader(train_set, batch_size=256, shuffle=True, collate_fn=collete_fn)
+directions: list[TranslationDirection] = [
+    {"source": "ug", "target": "zh"},
+    {"source": "zh", "target": "ug"},
+    {"source": "ug", "target": "en"},
+    {"source": "en", "target": "ug"},
+]
+
+train_set, validation_set = SentencePairDataset(tokenizer=tokenizer, tsv_files=[{"path": tsv, "directions": directions} for tsv in tsvs], max_allowed_tokens=300).split_into_train_set_validation_set(trainset_ratio=4096)
+trainset_loader = DataLoader(train_set, batch_size=64, shuffle=True, collate_fn=collete_fn)
 validationset_loader = DataLoader(validation_set, batch_size=256, shuffle=False, collate_fn=collete_fn)
 
 train(model=model, tokenizer=tokenizer, trainset_loader=trainset_loader, validationset_loader=validationset_loader, n_epoch=200, device=device, summary_writer=writer, learning_rate=0.00005)

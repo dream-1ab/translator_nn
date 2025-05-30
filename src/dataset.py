@@ -6,21 +6,34 @@ from torch import Tensor
 from tqdm import tqdm
 import csv
 import random
+from typing import TypedDict
+from os import PathLike
 
+class TranslationDirection(TypedDict):
+    source: str
+    target: str
+    
+class TranslationFile(TypedDict):
+    path: PathLike
+    directions: list[TranslationDirection]
+    
 class SentencePairDataset:
     """
     Dataset class for loading Uyghur-English sentence pairs from ./.sentences.csv.
     Each row in the CSV should have Uyghur in the first column and English in the second.
     """
-    def __init__(self, tokenizer: Tokenizer, tsv_files: list[str], max_allowed_tokens = 300):
+    def __init__(self, tokenizer: Tokenizer, tsv_files: list[TranslationFile], max_allowed_tokens = 300):
         self.tokenizer = tokenizer
         self.data: list[tuple[list[int], list[int]]] = []
-        for tsv in tsv_files:
-            with open(tsv, encoding='utf-8') as f:
+        for tsv_file in tsv_files:
+            with open(tsv_file["path"], encoding='utf-8') as f:
                 reader = csv.reader(f, delimiter="\t")
-                language_pair = next(reader)
-                print(f"loading dataset for [{language_pair[0]}]->[{language_pair[1]}] in file: {tsv} ...")
-                for row in reader:
+                all_tsv_columns = next(reader)
+                column_index = {item: index for index, item in enumerate(all_tsv_columns)}
+                
+                dirs = ["{source}->{target}".format(source=d["source"], target=d["target"]) for d in tsv_file["directions"]]
+                print(f"tsv file: {tsv_file["path"]} contains the following columns: {all_tsv_columns} and will include these columns as language directions: {dirs}")
+                for row in tqdm(reader, desc="loading dataset..."):
                     def append_data(row: tuple[str, str], source_language_code: str, target_language_code: str):
                         if len(row) >= 2:
                             source = f"<SOS><{target_language_code}>{row[0].strip().lower()}</{target_language_code}><EOS>"
@@ -34,10 +47,10 @@ class SentencePairDataset:
                             # randomly add same sentence as source and target to maintain language tag consistency.
                             if random.random() > 0.95:
                                 self.data.append((target_language, target_language))
-                    
-                    append_data((row[0], row[1]), language_pair[0], language_pair[1])
-                    #the reverse is blocked because single source -> multiple target sentence causes issue.
-                    # append_data((row[1], row[0]), language_pair[1], language_pair[0])
+                    for dir in tsv_file["directions"]:
+                        append_data((row[column_index[dir["source"]]], row[column_index[dir["target"]]]), dir["source"], dir["target"])
+                        #the reverse is blocked because single source -> multiple target sentence causes issue.
+                        # append_data((row[1], row[0]), language_pair[1], language_pair[0])
                     
         self.data = sorted(self.data, key=lambda item: len(item))
         self.print_data_count()
@@ -51,15 +64,26 @@ class SentencePairDataset:
     def __getitem__(self, idx):
         return self.data[idx]
 
-    def split_into_train_set_validation_set(self, trainset_ratio = 0.95) -> tuple["SentencePairDataset", "SentencePairDataset"]:
-        trainset_ratio = min(trainset_ratio, 0.98)
-        trainset_ratio = max(trainset_ratio, 0.5)
+    def split_into_train_set_validation_set(self, trainset_count = 4096) -> tuple["SentencePairDataset", "SentencePairDataset"]:
+        trainset_count = min(trainset_count, 32768)
+        trainset_count = max(trainset_count, 128)
         train, test = SentencePairDataset(self.tokenizer, []), SentencePairDataset(self.tokenizer, [])
-        for i in self.data:
-            if random.random() > trainset_ratio:
-                test.data.append(i)
+        testset_indices: set[int] = set()
+        
+        #Append number of testset sample into testset.
+        for i in range(trainset_count):
+            idx = random.randint(0, len(self.data))
+            if idx in testset_indices:
+                continue
+            test.data.append(self.data[i])
+            testset_indices.add(idx)
+        
+        #Append remaining data to trainset.
+        for i, item in enumerate(self.data):
+            if i in testset_indices:
+                continue
             else:
-                train.data.append(i)
+                train.data.append(item)
         
         train.print_data_count()
         test.print_data_count()
