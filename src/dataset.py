@@ -71,7 +71,9 @@ class SentencePairDataset:
         testset_indices: set[int] = set()
         
         #Append number of testset sample into testset.
-        for i in range(trainset_count):
+        while True:
+            if len(testset_indices) > trainset_count:
+                break
             idx = random.randint(0, len(self.data))
             if idx in testset_indices:
                 continue

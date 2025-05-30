@@ -100,8 +100,8 @@ directions: list[TranslationDirection] = [
     {"source": "en", "target": "ug"},
 ]
 
-train_set, validation_set = SentencePairDataset(tokenizer=tokenizer, tsv_files=[{"path": tsv, "directions": directions} for tsv in tsvs], max_allowed_tokens=300).split_into_train_set_validation_set(trainset_ratio=4096)
+train_set, validation_set = SentencePairDataset(tokenizer=tokenizer, tsv_files=[{"path": tsv, "directions": directions} for tsv in tsvs], max_allowed_tokens=300).split_into_train_set_validation_set(trainset_count=4096)
 trainset_loader = DataLoader(train_set, batch_size=64, shuffle=True, collate_fn=collete_fn)
-validationset_loader = DataLoader(validation_set, batch_size=256, shuffle=False, collate_fn=collete_fn)
+validationset_loader = DataLoader(validation_set, batch_size=64, shuffle=False, collate_fn=collete_fn)
 
 train(model=model, tokenizer=tokenizer, trainset_loader=trainset_loader, validationset_loader=validationset_loader, n_epoch=200, device=device, summary_writer=writer, learning_rate=0.00005)
