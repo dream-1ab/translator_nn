@@ -42,7 +42,7 @@ def train(model: MyTranslator, tokenizer: Tokenizer, trainset_loader: DataLoader
     
     counter = counter_start
     for i in range(epoch_start, n_epoch):
-        train_progress = tqdm(trainset_loader, ncols=300)
+        train_progress = tqdm(trainset_loader, ncols=200)
         for (source_sentence, target_sentence) in train_progress:
             source_sentence: Tensor; target_sentence: Tensor
             source_sentence = source_sentence.to(device)
@@ -89,8 +89,7 @@ writer = SummaryWriter(Path(__file__).parent.parent / ".logs")
 
 data_dir = Path(__file__).parent.parent / ".data"
 tsvs = [
-    data_dir / "titles.tsv",
-    data_dir / "sub_sentences_1_translated.tsv"
+    f for f in data_dir.iterdir() if f.is_file() and f.name.endswith(".tsv")
 ]
 
 directions: list[TranslationDirection] = [
