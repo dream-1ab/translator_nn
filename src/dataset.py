@@ -77,7 +77,7 @@ class SentencePairDataset:
             idx = random.randint(0, len(self.data))
             if idx in testset_indices:
                 continue
-            test.data.append(self.data[i])
+            test.data.append(self.data[idx])
             testset_indices.add(idx)
         
         #Append remaining data to trainset.
